@@ -20,33 +20,17 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Download References
-      run: |
-        echo "[Download References] Downloading dependencies"
-        mkdir DepotDownloader
-        cd DepotDownloader
-        Invoke-WebRequest -Uri "https://github.com/SteamRE/DepotDownloader/releases/latest/download/DepotDownloader-windows-x64.zip" -OutFile "DepotDownloader-windows-x64.zip"
-        Expand-Archive -Path "DepotDownloader-windows-x64.zip" -DestinationPath "."
-        echo 'regex:RustDedicated_Data/Managed/.*\.dll' > filelist.txt
-        echo "[Download References] Downloading Rust dlls"
-        .\DepotDownloader -app 258550 -depot 258552 -filelist filelist.txt -dir "$(pwd)"
-        cd ..
-        mkdir src\dependencies
-        echo "[Download References] Moving Rust dlls"
-        Move-Item DepotDownloader\RustDedicated_Data\Managed\*.dll src\dependencies\ -Force
-        mkdir Oxide
-        cd Oxide
-        echo "[Download References] Downloading Oxide"
-        Invoke-WebRequest -Uri "https://github.com/OxideMod/Oxide.Rust/releases/latest/download/Oxide.Rust.zip" -OutFile "Oxide.Rust.zip"
-        Expand-Archive -Path "Oxide.Rust.zip" -DestinationPath "."
-        cd ..
-        echo "[Download References] Moving Oxide dlls"
-        Move-Item Oxide\RustDedicated_Data\Managed\*.dll src\dependencies\ -Force
+      shell: pwsh
+      run: .\rust-dependencies-download.ps1
 
     - name: Restore NuGet packages
-      run: msbuild -t:restore src/ConsoleExt/ConsoleExt.csproj
+      run: msbuild -t:restore src/ConsoleExt/ConsoleExt.csproj /p:Platform=Oxide
 
-    - name: Build DLL
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj /p:Configuration=Release /p:Platform="Any CPU"
+    - name: Build Oxide DLL
+      run: msbuild src/ConsoleExt/ConsoleExt.csproj /p:Configuration=Release /p:Platform=Oxide
+
+    - name: Build Carbon DLL
+      run: msbuild src/ConsoleExt/ConsoleExt.csproj /p:Configuration=Release /p:Platform=Carbon
 
     - name: Automated Versioning
       if: github.ref == 'refs/heads/main'
@@ -69,6 +53,6 @@ jobs:
 
     - name: Upload Release Assets
       run: |
-        gh release create ${{ env.NEW_TAG }} "src\ConsoleExt\bin\Any CPU\Release\net48\Oxide.Ext.ConsoleExt.dll" --title "Release ${{ env.NEW_TAG }}"
+        gh release create ${{ env.NEW_TAG }} "src\ConsoleExt\bin\Oxide\Release\net48\Oxide.Ext.ConsoleExt.dll" "src\ConsoleExt\bin\Carbon\Release\net48\Carbon.Ext.ConsoleExt.dll" --title "Release ${{ env.NEW_TAG }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

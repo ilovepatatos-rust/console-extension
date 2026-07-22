@@ -6,12 +6,25 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Plugins", "Plugins\Plugins.
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Release|Any CPU = Release|Any CPU
+		Debug|Carbon = Debug|Carbon
+		Debug|Oxide = Debug|Oxide
+		Release|Carbon = Release|Carbon
+		Release|Oxide = Release|Oxide
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{04126207-8375-47BE-9D58-D53224B83852}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{04126207-8375-47BE-9D58-D53224B83852}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Debug|Carbon.ActiveCfg = Debug|Carbon
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Debug|Carbon.Build.0 = Debug|Carbon
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Debug|Oxide.ActiveCfg = Debug|Oxide
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Debug|Oxide.Build.0 = Debug|Oxide
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Carbon.ActiveCfg = Release|Carbon
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Carbon.Build.0 = Release|Carbon
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Oxide.ActiveCfg = Release|Oxide
+		{A8E10AAF-B143-4A27-876C-2694D405028D}.Release|Oxide.Build.0 = Release|Oxide
+		{04126207-8375-47BE-9D58-D53224B83852}.Debug|Carbon.ActiveCfg = Debug|Any CPU
+		{04126207-8375-47BE-9D58-D53224B83852}.Debug|Oxide.ActiveCfg = Debug|Any CPU
+		{04126207-8375-47BE-9D58-D53224B83852}.Debug|Oxide.Build.0 = Debug|Any CPU
+		{04126207-8375-47BE-9D58-D53224B83852}.Release|Carbon.ActiveCfg = Release|Any CPU
+		{04126207-8375-47BE-9D58-D53224B83852}.Release|Oxide.ActiveCfg = Release|Any CPU
+		{04126207-8375-47BE-9D58-D53224B83852}.Release|Oxide.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

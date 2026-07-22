@@ -1,4 +1,6 @@
-﻿using JetBrains.Annotations;
+﻿#if OXIDE
+
+using JetBrains.Annotations;
 using Oxide.Core;
 using Oxide.Core.Extensions;
 
@@ -7,11 +9,9 @@ namespace Oxide.Ext.ConsoleExt;
 [UsedImplicitly]
 public class ConsoleExt : Extension
 {
-    private static readonly VersionNumber s_extensionVersion = new(1, 1, 1);
-
     public override string Name => "ConsoleExt";
     public override string Author => "Ilovepatatos";
-    public override VersionNumber Version => s_extensionVersion;
+    public override VersionNumber Version => new(1, 1, 1);
 
     public override bool SupportsReloading => true;
 
@@ -22,3 +22,5 @@ public class ConsoleExt : Extension
         yield return "CONSOLE_FRAMEWORK";
     }
 }
+
+#endif
