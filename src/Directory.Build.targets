@@ -6,6 +6,9 @@
     <PropertyGroup>
         <AssemblySearchPaths>$(DependencyDirectory);$(AssemblySearchPaths)</AssemblySearchPaths>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(RustFramework)' == 'oxide+carbon'">
+        <AssemblySearchPaths>$(OxideDependencyDirectory);$(CarbonDependencyDirectory);$(AssemblySearchPaths)</AssemblySearchPaths>
+    </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="0Harmony" />
@@ -325,10 +328,14 @@
                Text="Platform must be Windows or Linux (received '$(Platform)')." />
         <Error Condition="'$(RustChannel)' != 'main' and '$(RustChannel)' != 'staging'"
                Text="RustChannel must be main or staging (received '$(RustChannel)' from configuration '$(Configuration)')." />
-        <Error Condition="'$(RustFramework)' != 'rust' and '$(RustFramework)' != 'oxide' and '$(RustFramework)' != 'carbon'"
-               Text="RustFramework must be rust, oxide, or carbon (received '$(RustFramework)' from configuration '$(Configuration)')." />
-        <Error Condition="!Exists('$(DependencyDirectory)')"
+        <Error Condition="'$(RustFramework)' != 'rust' and '$(RustFramework)' != 'oxide' and '$(RustFramework)' != 'carbon' and '$(RustFramework)' != 'oxide+carbon'"
+               Text="RustFramework must be rust, oxide, carbon, or oxide+carbon (received '$(RustFramework)' from configuration '$(Configuration)')." />
+        <Error Condition="'$(RustFramework)' != 'oxide+carbon' and !Exists('$(DependencyDirectory)')"
                Text="Rust dependencies not found at '$(DependencyDirectory)'. Run ./download-dependencies.ps1 (configuration=$(Configuration), platform=$(Platform))." />
+        <Error Condition="'$(RustFramework)' == 'oxide+carbon' and !Exists('$(OxideDependencyDirectory)')"
+               Text="Oxide dependencies not found at '$(OxideDependencyDirectory)'. Run ./download-dependencies.ps1 -Script rust+oxide+carbon (configuration=$(Configuration), platform=$(Platform))." />
+        <Error Condition="'$(RustFramework)' == 'oxide+carbon' and !Exists('$(CarbonDependencyDirectory)')"
+               Text="Carbon dependencies not found at '$(CarbonDependencyDirectory)'. Run ./download-dependencies.ps1 -Script rust+oxide+carbon (configuration=$(Configuration), platform=$(Platform))." />
     </Target>
 
     <Target Name="ClearReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences">

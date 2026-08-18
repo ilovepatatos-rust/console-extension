@@ -4,55 +4,69 @@ on:
   push:
     branches:
       - main
+      - staging
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     runs-on: windows-latest
+    env:
+      CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '4. Oxide Staging' || '3. Oxide' }}
+      DEPS_SCRIPT: ${{ github.ref == 'refs/heads/staging' && 'rust-staging+oxide+carbon' || 'rust+oxide+carbon' }}
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4.1.0
+      uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Necessary to fetch all tags for version calculation
+        fetch-depth: 0
 
     - name: Setup MSBuild Path
       uses: microsoft/setup-msbuild@v2
 
     - name: Download References
       shell: pwsh
-      run: .\rust-dependencies-download.ps1
+      run: .\download-dependencies.ps1 -Script $env:DEPS_SCRIPT -ServerPlatform Windows -Publicize:$false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Restore NuGet packages
-      run: msbuild -t:restore src/ConsoleExt/ConsoleExt.csproj /p:Platform=Oxide
+    - name: Restore and Build
+      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.CONFIGURATION }}" -p:Platform=Windows -p:RustFramework=oxide+carbon
 
-    - name: Build Oxide DLL
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj /p:Configuration=Release /p:Platform=Oxide
-
-    - name: Build Carbon DLL
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj /p:Configuration=Release /p:Platform=Carbon
-
-    - name: Automated Versioning
-      if: github.ref == 'refs/heads/main'
-      run: |
-        git fetch --tags
-        $latestTag = git tag -l --sort=-v:refname | Select-Object -First 1
-        if (-not $latestTag) {
-          $latestTag = "v1.0.0"
-        }
-        $versionNumbers = $latestTag.TrimStart('v').Split('.')
-        $newPatch = [int]$versionNumbers[2] + 1
-        $newTag = "v{0}.{1}.{2}" -f $versionNumbers[0], $versionNumbers[1], $newPatch
-        git tag $newTag
-        git push origin $newTag
-        echo "New Tag: $newTag"
-        echo "NEW_TAG=$newTag" | Out-File -FilePath $env:GITHUB_ENV -Append
+    - name: Create Release
       shell: pwsh
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload Release Assets
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create ${{ env.NEW_TAG }} "src\ConsoleExt\bin\Oxide\Release\net48\Oxide.Ext.ConsoleExt.dll" "src\ConsoleExt\bin\Carbon\Release\net48\Carbon.Ext.ConsoleExt.dll" --title "Release ${{ env.NEW_TAG }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git fetch --tags --force
+        $isStaging = $env:GITHUB_REF -eq 'refs/heads/staging'
+        $tags = @(git tag -l)
+        $pattern = if ($isStaging) { '^v(\d+)-staging$' } else { '^v(\d+)$' }
+        $numbers = foreach ($tagName in $tags) {
+          if ($tagName -match $pattern) { [int]$Matches[1] }
+        }
+        $max = ($numbers | Measure-Object -Maximum).Maximum
+        $next = if ($null -eq $max) { 1 } else { $max + 1 }
+        $tag = if ($isStaging) { "v$next-staging" } else { "v$next" }
+        $dll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:CONFIGURATION\net48\Oxide.Ext.ConsoleExt.dll"
+        if (-not (Test-Path -LiteralPath $dll)) {
+          throw "Built DLL not found at '$dll'."
+        }
+
+        if ($isStaging) {
+          gh release create $tag $dll --prerelease --title $tag
+          $viewExit = 0
+          gh release view latest-staging 2>$null | Out-Null
+          $viewExit = $LASTEXITCODE
+          if ($viewExit -eq 0) {
+            gh release delete latest-staging --cleanup-tag --yes
+          }
+          gh release create latest-staging $dll --prerelease --title "Staging (latest)" --notes "Currently $tag"
+        } else {
+          gh release create $tag $dll --latest --title $tag
+        }
+
+        Write-Host "Published $tag"

@@ -1,0 +1,52 @@
+name: Merge Staging into Main
+
+on:
+  schedule:
+    # 1PM EDT (UTC-4) and 1PM EST (UTC-5). The job keeps only first-Thursday 13:00 America/New_York.
+    - cron: '0 17 * * 4'
+    - cron: '0 18 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check first Thursday 1PM Eastern
+      id: gate
+      if: github.event_name == 'schedule'
+      run: |
+        export TZ=America/New_York
+        dow=$(date +%u)
+        dom=$(date +%d)
+        hour=$(date +%H)
+        echo "ET now: $(date) (dow=$dow dom=$dom hour=$hour)"
+        if [ "$dow" = "4" ] && [ "$dom" -le 7 ] && [ "$hour" = "13" ]; then
+          echo "run=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Not first Thursday 1PM Eastern; skipping."
+          echo "run=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Checkout
+      if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.run == 'true'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: main
+
+    - name: Merge staging into main
+      if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.run == 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git fetch origin staging
+        git checkout main
+        git merge origin/staging --no-edit
+        git push origin main
+        gh workflow run release.yml --ref main
