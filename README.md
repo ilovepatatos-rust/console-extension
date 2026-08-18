@@ -2,7 +2,7 @@
 Console framework for [Rust](https://store.steampowered.com/app/252490/Rust/) using the [Oxide/uMod](https://umod.org) or [Carbon](https://carbonmod.gg) extension platforms, allowing you to log in Pterodactyl's console using colors. *(It might work in other consoles, but hasn't been tested.)*
 
 ## Getting Started
-Download `Oxide.Ext.ConsoleExt.dll` from [the latest release](https://github.com/ilovepatatos-rust/console-extension/releases/latest) (production) or the `latest-staging` prerelease (staging). The same DLL is used for Oxide and Carbon.
+Download the DLL for your extension platform from [the latest release](https://github.com/ilovepatatos-rust/console-extension/releases/latest) (production) or the `latest-staging` prerelease (staging). Each release includes both Oxide and Carbon builds.
 
 ### Oxide/uMod
 1. Download `Oxide.Ext.ConsoleExt.dll`.
@@ -10,7 +10,7 @@ Download `Oxide.Ext.ConsoleExt.dll` from [the latest release](https://github.com
 3. Restart the server.
 
 ### Carbon
-1. Download `Oxide.Ext.ConsoleExt.dll`.
+1. Download `Carbon.Ext.ConsoleExt.dll`.
 2. Put the DLL into the `carbon\extensions` folder.
 3. Restart the server.
 

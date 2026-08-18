@@ -5,8 +5,9 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
 
-        <AssemblyName>Oxide.Ext.ConsoleExt</AssemblyName>
         <RootNamespace>Oxide.Ext.ConsoleExt</RootNamespace>
+        <AssemblyName Condition="'$(RustFramework)' == 'carbon'">Carbon.Ext.ConsoleExt</AssemblyName>
+        <AssemblyName Condition="'$(RustFramework)' != 'carbon'">Oxide.Ext.ConsoleExt</AssemblyName>
 
         <!-- Removes the .pdb file from the output folder. -->
         <DebugType>embedded</DebugType>

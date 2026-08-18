@@ -15,7 +15,8 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     runs-on: windows-latest
     env:
-      CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '4. Oxide Staging' || '3. Oxide' }}
+      OXIDE_CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '4. Oxide Staging' || '3. Oxide' }}
+      CARBON_CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '6. Carbon Staging' || '5. Carbon' }}
       DEPS_SCRIPT: ${{ github.ref == 'refs/heads/staging' && 'rust-staging+oxide+carbon' || 'rust+oxide+carbon' }}
 
     steps:
@@ -33,8 +34,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Restore and Build
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.CONFIGURATION }}" -p:Platform=Windows -p:RustFramework=oxide+carbon
+    - name: Restore and Build Oxide
+      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.OXIDE_CONFIGURATION }}" -p:Platform=Windows
+
+    - name: Restore and Build Carbon
+      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.CARBON_CONFIGURATION }}" -p:Platform=Windows
 
     - name: Create Release
       shell: pwsh
@@ -51,22 +55,24 @@ jobs:
         $max = ($numbers | Measure-Object -Maximum).Maximum
         $next = if ($null -eq $max) { 1 } else { $max + 1 }
         $tag = if ($isStaging) { "v$next-staging" } else { "v$next" }
-        $dll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:CONFIGURATION\net48\Oxide.Ext.ConsoleExt.dll"
-        if (-not (Test-Path -LiteralPath $dll)) {
-          throw "Built DLL not found at '$dll'."
+
+        $oxideDll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:OXIDE_CONFIGURATION\net48\Oxide.Ext.ConsoleExt.dll"
+        $carbonDll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:CARBON_CONFIGURATION\net48\Carbon.Ext.ConsoleExt.dll"
+        foreach ($dll in @($oxideDll, $carbonDll)) {
+          if (-not (Test-Path -LiteralPath $dll)) {
+            throw "Built DLL not found at '$dll'."
+          }
         }
 
         if ($isStaging) {
-          gh release create $tag $dll --prerelease --title $tag
-          $viewExit = 0
-          gh release view latest-staging 2>$null | Out-Null
-          $viewExit = $LASTEXITCODE
-          if ($viewExit -eq 0) {
+          gh release create $tag $oxideDll $carbonDll --prerelease --title $tag
+          gh release view latest-staging *> $null
+          if ($LASTEXITCODE -eq 0) {
             gh release delete latest-staging --cleanup-tag --yes
           }
-          gh release create latest-staging $dll --prerelease --title "Staging (latest)" --notes "Currently $tag"
+          gh release create latest-staging $oxideDll $carbonDll --prerelease --title "Staging (latest)" --notes "Currently $tag"
         } else {
-          gh release create $tag $dll --latest --title $tag
+          gh release create $tag $oxideDll $carbonDll --latest --title $tag
         }
 
         Write-Host "Published $tag"
