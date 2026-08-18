@@ -1,0 +1,15 @@
+{
+  "outputDirectory": "./src/dependencies",
+  "publicReleases": [],
+  "privateReleases": [],
+  "githubNuget": [],
+  "deleteDlls": [
+    "UnityEngine.ARModule.dll",
+    "UnityEngine.NVIDIAModule.dll",
+    "Microsoft.Bcl.AsyncInterfaces.dll",
+    "Microsoft.Win32.Registry.dll",
+    "System.Text.Encodings.Web.dll",
+    "System.Numerics.Vectors.dll",
+    "Newtonsoft.Json.dll"
+  ]
+}

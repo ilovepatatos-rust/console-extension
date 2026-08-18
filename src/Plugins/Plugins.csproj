@@ -4,21 +4,11 @@
         <TargetFramework>net48</TargetFramework>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>disable</Nullable>
+        <RootNamespace>Oxide.Plugins</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="Oxide.Core">
-        <HintPath>..\dependencies\Oxide.Core.dll</HintPath>
-      </Reference>
-      <Reference Include="Oxide.CSharp">
-        <HintPath>..\dependencies\Oxide.CSharp.dll</HintPath>
-      </Reference>
-      <Reference Include="Oxide.Ext.ConsoleExt">
-        <HintPath>..\ConsoleExt\bin\Release\net48\Oxide.Ext.ConsoleExt.dll</HintPath>
-      </Reference>
-      <Reference Include="UnityEngine.CoreModule">
-        <HintPath>..\dependencies\UnityEngine.CoreModule.dll</HintPath>
-      </Reference>
+        <ProjectReference Include="..\ConsoleExt\ConsoleExt.csproj" ReferenceOutputAssembly="true" Private="false" />
     </ItemGroup>
 
 </Project>

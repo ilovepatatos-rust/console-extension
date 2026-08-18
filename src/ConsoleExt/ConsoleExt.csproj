@@ -1,71 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>net48</TargetFramework>
+        <LangVersion>14</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
+
         <AssemblyName>Oxide.Ext.ConsoleExt</AssemblyName>
         <RootNamespace>Oxide.Ext.ConsoleExt</RootNamespace>
-        <Configurations>Debug;Release</Configurations>
-        <Platforms>Oxide;Carbon</Platforms>
 
-        <!-- removes the .pdb file from the output folder -->
+        <!-- Removes the .pdb file from the output folder. -->
         <DebugType>embedded</DebugType>
-        <LangVersion>11</LangVersion>
     </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Carbon' ">
-        <DefineConstants>TRACE;DEBUG;CARBON</DefineConstants>
-        <AssemblyName>Carbon.Ext.ConsoleExt</AssemblyName>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|Oxide' ">
-        <DefineConstants>TRACE;DEBUG;OXIDE</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Carbon' ">
-        <DefineConstants>TRACE;CARBON</DefineConstants>
-        <AssemblyName>Carbon.Ext.ConsoleExt</AssemblyName>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|Oxide' ">
-        <DefineConstants>TRACE;OXIDE</DefineConstants>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <Reference Include="Carbon.Common" Condition=" '$(Platform)' == 'Carbon'">
-          <HintPath>..\dependencies\Carbon.Common.dll</HintPath>
-        </Reference>
-        <Reference Include="Carbon.SDK" Condition=" '$(Platform)' == 'Carbon'">
-          <HintPath>..\dependencies\Carbon.SDK.dll</HintPath>
-        </Reference>
-        <Reference Include="Facepunch.System">
-          <HintPath>..\dependencies\Facepunch.System.dll</HintPath>
-        </Reference>
-        <Reference Include="mscorlib">
-          <HintPath>..\dependencies\mscorlib.dll</HintPath>
-        </Reference>
-        <Reference Include="Oxide.Core" Condition=" '$(Platform)' == 'Oxide'">
-            <HintPath>..\dependencies\Oxide.Core.dll</HintPath>
-        </Reference>
-        <Reference Include="System.Net.Http">
-            <HintPath>..\dependencies\System.Net.Http.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.CoreModule">
-            <HintPath>..\dependencies\UnityEngine.CoreModule.dll</HintPath>
-        </Reference>
-    </ItemGroup>
-
-    <!-- make all references non-private, so they won't be copied to the output folder -->
-    <Target Name="ClearReferenceCopyLocalPaths" AfterTargets="ResolveAssemblyReferences">
-        <ItemGroup>
-            <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
-        </ItemGroup>
-    </Target>
-
-    <!-- remove the .deps.json file from the output folder -->
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="if exist &quot;$(OutDir)*.deps.json&quot; del &quot;$(OutDir)*.deps.json&quot;" />
-    </Target>
-
 </Project>
