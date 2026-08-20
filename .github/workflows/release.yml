@@ -7,12 +7,26 @@ on:
       - staging
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
 jobs:
+  force-wipe-merge:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/force-wipe-merge.yml
+    secrets: inherit
+    permissions:
+      contents: write
+
   build:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    needs: force-wipe-merge
+    if: |
+      always() && !cancelled() && !failure() &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
     runs-on: windows-latest
     env:
       OXIDE_CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '4. Oxide Staging' || '3. Oxide' }}
@@ -24,6 +38,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        ref: ${{ needs.force-wipe-merge.outputs.merged == 'true' && 'main' || github.sha }}
 
     - name: Setup MSBuild Path
       uses: microsoft/setup-msbuild@v2

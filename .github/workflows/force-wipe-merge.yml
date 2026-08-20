@@ -1,0 +1,53 @@
+name: Force wipe merge
+
+on:
+  workflow_call:
+    outputs:
+      merged:
+        description: Whether the first-Thursday Eastern window was active and staging was merged into main
+        value: ${{ jobs.merge.outputs.merged }}
+
+concurrency:
+  group: force-wipe-merge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    outputs:
+      merged: ${{ steps.gate.outputs.in_window }}
+    steps:
+    - name: Check first Thursday 12:00-15:00 Eastern
+      id: gate
+      run: |
+        export TZ=America/New_York
+        dow=$(date +%u)
+        dom=$(date +%d)
+        hour=$(date +%H)
+        echo "ET now: $(date) (dow=$dow dom=$dom hour=$hour)"
+        if [ "$dow" = "4" ] && [ "$dom" -le 7 ] && { [ "$hour" = "12" ] || [ "$hour" = "13" ] || [ "$hour" = "14" ]; }; then
+          echo "in_window=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Not first Thursday 12:00-15:00 Eastern; skipping merge."
+          echo "in_window=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Checkout
+      if: steps.gate.outputs.in_window == 'true'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: main
+
+    - name: Merge staging into main
+      if: steps.gate.outputs.in_window == 'true'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git fetch origin staging
+        git checkout main
+        git merge origin/staging --no-edit
+        git push origin main
