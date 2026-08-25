@@ -15,106 +15,12 @@ permissions:
   contents: write
 
 jobs:
-  force-wipe-merge:
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/force-wipe-merge.yml
+  release:
+    uses: ilovepatatos-rust/github-workflows/.github/workflows/release.yml@main
+    with:
+      project: src/ConsoleExt/ConsoleExt.csproj
+      asset: Oxide.Ext.ConsoleExt.dll, Carbon.Ext.ConsoleExt.dll
+      targets: oxide, carbon
+      publicize: false
+      keep_versions: 3
     secrets: inherit
-    permissions:
-      contents: write
-
-  build:
-    needs: force-wipe-merge
-    if: |
-      always() && !cancelled() && !failure() &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
-    runs-on: windows-latest
-    env:
-      OXIDE_CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '4. Oxide Staging' || '3. Oxide' }}
-      CARBON_CONFIGURATION: ${{ github.ref == 'refs/heads/staging' && '6. Carbon Staging' || '5. Carbon' }}
-      DEPS_SCRIPT: ${{ github.ref == 'refs/heads/staging' && 'rust-staging+oxide+carbon' || 'rust+oxide+carbon' }}
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        ref: ${{ needs.force-wipe-merge.outputs.merged == 'true' && 'main' || github.sha }}
-
-    - name: Setup MSBuild Path
-      uses: microsoft/setup-msbuild@v2
-
-    - name: Download References
-      shell: pwsh
-      run: .\download-dependencies.ps1 -Script $env:DEPS_SCRIPT -ServerPlatform Windows -Publicize:$false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Restore and Build Oxide
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.OXIDE_CONFIGURATION }}" -p:Platform=Windows
-
-    - name: Restore and Build Carbon
-      run: msbuild src/ConsoleExt/ConsoleExt.csproj -t:restore,Build -p:Configuration="${{ env.CARBON_CONFIGURATION }}" -p:Platform=Windows
-
-    - name: Create Release
-      shell: pwsh
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        git fetch --tags --force
-        $isStaging = $env:GITHUB_REF -eq 'refs/heads/staging'
-        $tags = @(git tag -l)
-        $pattern = if ($isStaging) { '^v(\d+)-staging$' } else { '^v(\d+)$' }
-        $numbers = foreach ($tagName in $tags) {
-          if ($tagName -match $pattern) { [int]$Matches[1] }
-        }
-        $max = ($numbers | Measure-Object -Maximum).Maximum
-        $next = if ($null -eq $max) { 1 } else { $max + 1 }
-        $tag = if ($isStaging) { "v$next-staging" } else { "v$next" }
-
-        $oxideDll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:OXIDE_CONFIGURATION\net48\Oxide.Ext.ConsoleExt.dll"
-        $carbonDll = Join-Path $env:GITHUB_WORKSPACE "src\ConsoleExt\bin\Windows\$env:CARBON_CONFIGURATION\net48\Carbon.Ext.ConsoleExt.dll"
-        foreach ($dll in @($oxideDll, $carbonDll)) {
-          if (-not (Test-Path -LiteralPath $dll)) {
-            throw "Built DLL not found at '$dll'."
-          }
-        }
-
-        if ($isStaging) {
-          # Versioned staging tags stay in git for numbering; GitHub only keeps latest-staging.
-          git tag $tag
-          git push origin $tag
-          gh release view latest-staging *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release delete latest-staging --cleanup-tag --yes
-          }
-          gh release create latest-staging $oxideDll $carbonDll --prerelease --title "Staging (latest)" --notes "Currently $tag"
-        } else {
-          gh release create $tag $oxideDll $carbonDll --latest --title $tag
-        }
-
-        Write-Host "Published $tag"
-
-        $keepProduction = 3
-        $releases = gh release list --limit 1000 --json tagName | ConvertFrom-Json
-        $production = foreach ($release in $releases) {
-          if ($release.tagName -match '^v(\d+)$') {
-            [pscustomobject]@{ Tag = $release.tagName; N = [int]$Matches[1] }
-          }
-        }
-        $keep = @{}
-        $keep['latest-staging'] = $true
-        foreach ($release in ($production | Sort-Object N -Descending | Select-Object -First $keepProduction)) {
-          $keep[$release.Tag] = $true
-        }
-
-        foreach ($release in $releases) {
-          $name = $release.tagName
-          if ($keep.ContainsKey($name)) { continue }
-          Write-Host "Deleting old release $name"
-          # Keep vN-staging git tags so the next staging number still increments.
-          if ($name -match '^v\d+-staging$') {
-            gh release delete $name --yes
-          } else {
-            gh release delete $name --cleanup-tag --yes
-          }
-        }
